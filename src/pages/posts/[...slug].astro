@@ -1,0 +1,44 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { getPosts, readingMinutes, formatDate, type Post } from '../../lib/posts';
+import { KINDS } from '../../consts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post, i) => ({
+    params: { slug: post.id },
+    props: { post, older: posts[i + 1] ?? null },
+  }));
+}
+
+interface Props { post: Post; older: Post | null }
+const { post, older } = Astro.props;
+const { Content } = await render(post);
+const { title, date, kind, description, aiSummary, series } = post.data;
+---
+<Base title={title} description={description} current="posts" type="article">
+  <article class="art">
+    <div class="crumb"><a href="/">글</a> / {KINDS[kind]}</div>
+    <h1 class="art-title">{title}</h1>
+    <div class="art-meta">
+      <span><time datetime={date.toISOString()}>{formatDate(date)}</time></span>
+      <span>{readingMinutes(post.body)}분 분량</span>
+      {series && <span>{series}</span>}
+    </div>
+
+    {aiSummary && aiSummary.length > 0 && (
+      <details class="ai-sum" open>
+        <summary>AI 요약 <span><span class="when-open">접기</span><span class="when-closed">펼치기</span></span></summary>
+        <ul>{aiSummary.map((s) => <li>{s}</li>)}</ul>
+        <p>본문을 바탕으로 AI가 만든 요약이에요. 정확한 내용은 본문을 확인해 주세요.</p>
+      </details>
+    )}
+
+    <div class="prose"><Content /></div>
+
+    {older && (
+      <div class="next">이전 글<a href={`/posts/${older.id}/`}>{older.data.title}</a></div>
+    )}
+  </article>
+</Base>
