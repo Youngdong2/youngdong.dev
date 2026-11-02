@@ -1,43 +1,57 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getPosts, groupByYear } from '../lib/posts';
+import { getPosts, groupByYear, formatDate } from '../lib/posts';
 import { KINDS } from '../consts';
 
 const posts = await getPosts();
-const years = groupByYear(posts);
+// 맨 위에는 가장 최근의 메모가 아닌 글을 크게 보여준다
+const lead = posts.find((p) => p.data.kind !== 'memo');
+const rest = posts.filter((p) => p !== lead);
+const years = groupByYear(rest);
+const counts = Object.fromEntries(Object.keys(KINDS).map((k) => [k, rest.filter((p) => p.data.kind === k).length]));
 ---
 <Base current="posts">
-  <section class="intro">
-    <p>AI 에이전트를 만드는 엔지니어 김영동입니다.<br />일하면서 겪은 문제와 읽고 생각한 것을 적습니다.</p>
-  </section>
+  {posts.length === 0 && <p class="empty">아직 글이 없어요. 첫 글을 준비하고 있습니다.</p>}
 
-  <div class="filter" role="toolbar" aria-label="글 종류">
-    <button type="button" aria-pressed="true" data-k="all">전체</button>
-    {Object.entries(KINDS).map(([k, label]) => (
-      <button type="button" aria-pressed="false" data-k={k}>{label}</button>
-    ))}
-  </div>
+  {lead && (
+    <section class="lead" aria-label="최근 글">
+      <div class="lead-meta">최근 글, <time datetime={lead.data.date.toISOString()}>{formatDate(lead.data.date)}</time></div>
+      <a href={`/posts/${lead.id}/`}>
+        <h2>{lead.data.title}{lead.data.draft && <span class="draft-tag">초안</span>}</h2>
+      </a>
+      {lead.data.description && <p>{lead.data.description}</p>}
+      <a class="lead-go" href={`/posts/${lead.id}/`}>읽기</a>
+    </section>
+  )}
 
-  <section class="archive" aria-label="글 목록">
-    {posts.length === 0 && <p class="empty">아직 글이 없어요. 첫 글을 준비하고 있습니다.</p>}
-    {years.map(([year, list]) => (
-      <div class="year">
-        <h2>{year}</h2>
-        <div>
-          {list.map((p) => (
-            <article class={`post-row ${p.data.kind}`} data-k={p.data.kind}>
-              <time datetime={p.data.date.toISOString()}>{p.data.date.getMonth() + 1}월</time>
-              <a href={`/posts/${p.id}/`}>
-                <h3>{p.data.title}{p.data.draft && <span class="draft-tag">초안</span>}</h3>
-                {p.data.kind !== 'memo' && p.data.description && <p>{p.data.description}</p>}
-              </a>
-              <span class="kind">{KINDS[p.data.kind]}</span>
-            </article>
-          ))}
-        </div>
+  {rest.length > 0 && (
+    <div class="home">
+      <div class="filter" role="toolbar" aria-label="글 종류">
+        <button type="button" aria-pressed="true" data-k="all">전체<span>{rest.length}</span></button>
+        {Object.entries(KINDS).map(([k, label]) => (
+          <button type="button" aria-pressed="false" data-k={k}>{label}<span>{counts[k]}</span></button>
+        ))}
       </div>
-    ))}
-  </section>
+
+      <section class="archive" aria-label="지난 글">
+        {years.map(([year, list]) => (
+          <div class="year">
+            <h2>{year}</h2>
+            {list.map((p) => (
+              <article class={`post-row ${p.data.kind}`} data-k={p.data.kind}>
+                <time datetime={p.data.date.toISOString()}>{p.data.date.getMonth() + 1}.{String(p.data.date.getDate()).padStart(2, '0')}</time>
+                <a href={`/posts/${p.id}/`}>
+                  <h3>{p.data.title}{p.data.draft && <span class="draft-tag">초안</span>}</h3>
+                  {p.data.kind !== 'memo' && p.data.description && <p>{p.data.description}</p>}
+                </a>
+                <span class="kind">{KINDS[p.data.kind]}</span>
+              </article>
+            ))}
+          </div>
+        ))}
+      </section>
+    </div>
+  )}
 </Base>
 
 <script>

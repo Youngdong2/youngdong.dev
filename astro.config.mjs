@@ -5,6 +5,6 @@ export default defineConfig({
   site: 'https://youngdong.dev',
   integrations: [sitemap()],
   markdown: {
-    shikiConfig: { theme: 'github-light' },
+    shikiConfig: { themes: { light: 'github-light', dark: 'github-dark' } },
   },
 });

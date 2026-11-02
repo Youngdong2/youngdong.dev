@@ -5,11 +5,14 @@ import { SITE } from '../consts';
 interface Props {
   title?: string;
   description?: string;
-  current?: 'posts' | 'about' | null;
+  current?: 'posts' | null;
   type?: 'website' | 'article';
+  published?: Date;
+  modified?: Date;
 }
-const { title, description = SITE.description, current = null, type = 'website' } = Astro.props;
-const pageTitle = title ? `${title} | ${SITE.title}` : `${SITE.title} | youngdong.dev`;
+const { title, description = SITE.description, current = null, type = 'website', published, modified } = Astro.props;
+const ogImage = new URL('/og.png', Astro.site);
+const pageTitle = title ? `${title} | ${SITE.title}` : SITE.title;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 <!doctype html>
@@ -28,29 +31,58 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:locale" content="ko_KR" />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:site_name" content={SITE.title} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`${SITE.title}, ${SITE.tagline}`} />
+    {published && <meta property="article:published_time" content={published.toISOString()} />}
+    {modified && <meta property="article:modified_time" content={modified.toISOString()} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121417" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="color-scheme" content="light dark" />
+    <!-- 저장된 테마를 그리기 전에 적용해 깜빡임을 막는다 -->
+    <script is:inline>
+      try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <slot name="head" />
   </head>
   <body>
     <a class="skip" href="#main">본문으로 건너뛰기</a>
-    <div class="wrap">
-      <header class="site-top">
-        <a class="site-name" href="/">{SITE.title}</a>
-        <nav aria-label="주 메뉴">
-          <a href="/" aria-current={current === 'posts' ? 'page' : undefined}>글</a>
-          <a href="/about" aria-current={current === 'about' ? 'page' : undefined}>소개</a>
-          <a href="/rss.xml">RSS</a>
-        </nav>
-      </header>
-      <main id="main"><slot /></main>
-      <footer class="site-foot">
-        <span>youngdong.dev</span>
+    <header class="site-top">
+      <a class="site-name" href="/">{SITE.title}</a>
+      <span class="site-tag">{SITE.tagline}</span>
+      <nav aria-label="주 메뉴">
+        <a href="/" aria-current={current === 'posts' ? 'page' : undefined}>글</a>
+        <a href="/rss.xml">RSS</a>
+        <button type="button" class="theme" aria-label="다크 모드 전환" title="다크 모드 전환">
+          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 2a8 8 0 1 0 0 16z" fill="currentColor"/><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        </button>
+      </nav>
+    </header>
+    <main id="main"><slot /></main>
+    <footer class="site-foot">
+      <p>{SITE.title}, {SITE.footnote}</p>
+      <div class="site-links">
         {SITE.links.github && <a href={SITE.links.github}>GitHub</a>}
         {SITE.links.linkedin && <a href={SITE.links.linkedin}>LinkedIn</a>}
+        <a class="mail" data-u={SITE.links.email.user} data-d={SITE.links.email.domain}>이메일</a>
         <a href="/rss.xml">RSS</a>
-      </footer>
-    </div>
+      </div>
+    </footer>
+    <script is:inline>
+      document.querySelectorAll('.mail').forEach((a) => { a.href = 'mailto:' + a.dataset.u + '@' + a.dataset.d; });
+      document.querySelector('.theme').addEventListener('click', () => {
+        const r = document.documentElement;
+        const dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+        r.dataset.theme = dark ? 'light' : 'dark';
+        try { localStorage.setItem('theme', r.dataset.theme); } catch {}
+      });
+    </script>
   </body>
 </html>

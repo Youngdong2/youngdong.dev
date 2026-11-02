@@ -1,28 +1,47 @@
 ---
 import { render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
+import Comments from '../../components/Comments.astro';
 import { getPosts, readingMinutes, formatDate, type Post } from '../../lib/posts';
-import { KINDS } from '../../consts';
+import { KINDS, SITE } from '../../consts';
 
 export async function getStaticPaths() {
   const posts = await getPosts();
   return posts.map((post, i) => ({
     params: { slug: post.id },
-    props: { post, older: posts[i + 1] ?? null },
+    props: { post, newer: posts[i - 1] ?? null, older: posts[i + 1] ?? null },
   }));
 }
 
-interface Props { post: Post; older: Post | null }
-const { post, older } = Astro.props;
-const { Content } = await render(post);
-const { title, date, kind, description, aiSummary, series } = post.data;
+interface Props { post: Post; newer: Post | null; older: Post | null }
+const { post, newer, older } = Astro.props;
+const { Content, headings } = await render(post);
+const toc = headings.filter((h) => h.depth === 2 && h.slug !== 'footnote-label');
+const { title, date, updated, kind, description, aiSummary, series } = post.data;
+
+// 검색엔진용 구조화 데이터. 실명을 쓰지 않기로 해서 작성자는 사이트 이름으로 둔다
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: title,
+  description,
+  datePublished: date.toISOString(),
+  dateModified: (updated ?? date).toISOString(),
+  inLanguage: 'ko',
+  url: new URL(`/posts/${post.id}/`, SITE.url).href,
+  image: new URL('/og.png', SITE.url).href,
+  author: { '@type': 'Person', name: SITE.title, url: SITE.url },
+};
 ---
-<Base title={title} description={description} current="posts" type="article">
+<Base title={title} description={description} current="posts" type="article" published={date} modified={updated}>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} slot="head" />
+  <div class="art-wrap">
   <article class="art">
-    <div class="crumb"><a href="/">글</a> / {KINDS[kind]}</div>
+    <div class="crumb">{KINDS[kind]}</div>
     <h1 class="art-title">{title}</h1>
     <div class="art-meta">
       <span><time datetime={date.toISOString()}>{formatDate(date)}</time></span>
+      {updated && <span>수정 <time datetime={updated.toISOString()}>{formatDate(updated)}</time></span>}
       <span>{readingMinutes(post.body)}분 분량</span>
       {series && <span>{series}</span>}
     </div>
@@ -37,8 +56,75 @@ const { title, date, kind, description, aiSummary, series } = post.data;
 
     <div class="prose"><Content /></div>
 
-    {older && (
-      <div class="next">이전 글<a href={`/posts/${older.id}/`}>{older.data.title}</a></div>
+    <div class="share">
+      <button type="button" class="copy-link" data-url={new URL(`/posts/${post.id}/`, SITE.url).href}>링크 복사</button>
+    </div>
+
+    {(newer || older) && (
+      <nav class="pager" aria-label="다른 글">
+        {older ? <a class="older" href={`/posts/${older.id}/`}><span>이전 글</span>{older.data.title}</a> : <span />}
+        {newer && <a class="newer" href={`/posts/${newer.id}/`}><span>다음 글</span>{newer.data.title}</a>}
+      </nav>
     )}
+
+    <Comments />
   </article>
+  {toc.length >= 2 && (
+    <nav class="toc" aria-label="이 글의 순서">
+      <h2>이 글의 순서</h2>
+      <ol>{toc.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}</ol>
+    </nav>
+  )}
+  </div>
 </Base>
+
+<script>
+  // 지금 읽고 있는 소제목을 목차에 표시한다
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('.toc a')];
+  if (links.length) {
+    const map = new Map(links.map((a) => [decodeURIComponent(a.hash.slice(1)), a]));
+    const io = new IntersectionObserver((es) => {
+      es.filter((e) => e.isIntersecting).forEach((e) => {
+        links.forEach((a) => a.removeAttribute('aria-current'));
+        map.get(e.target.id)?.setAttribute('aria-current', 'true');
+      });
+    }, { rootMargin: '0px 0px -70% 0px' });
+    map.forEach((_, id) => { const el = document.getElementById(id); if (el) io.observe(el); });
+  }
+
+  // 클립보드 복사 후 버튼 문구로 결과를 알려준다
+  async function copy(btn: HTMLElement, text: string, done: string) {
+    const label = btn.textContent;
+    try { await navigator.clipboard.writeText(text); btn.textContent = done; }
+    catch { btn.textContent = '복사하지 못했어요'; }
+    setTimeout(() => { btn.textContent = label; }, 1600);
+  }
+
+  // 소제목 옆 # 링크
+  document.querySelectorAll<HTMLElement>('.prose h2[id]:not(#footnote-label), .prose h3[id]').forEach((h) => {
+    const a = document.createElement('a');
+    a.className = 'anchor';
+    a.href = `#${h.id}`;
+    a.textContent = '#';
+    a.setAttribute('aria-label', `${h.textContent} 링크`);
+    h.append(a);
+  });
+
+  // 코드 블록 복사 버튼
+  document.querySelectorAll<HTMLPreElement>('.prose pre').forEach((pre) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-code';
+    btn.textContent = '복사';
+    btn.addEventListener('click', () => copy(btn, pre.querySelector('code')?.innerText ?? pre.innerText, '복사했어요'));
+    const box = document.createElement('div');
+    box.className = 'code-box';
+    pre.replaceWith(box);
+    box.append(pre, btn);
+  });
+
+  // 글 링크 복사
+  document.querySelectorAll<HTMLButtonElement>('.copy-link').forEach((b) =>
+    b.addEventListener('click', () => copy(b, b.dataset.url ?? location.href, '링크를 복사했어요')),
+  );
+</script>
