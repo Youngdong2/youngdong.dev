@@ -35,7 +35,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content={`${SITE.title}, ${SITE.tagline}`} />
+    <meta property="og:image:alt" content={SITE.title} />
     {published && <meta property="article:published_time" content={published.toISOString()} />}
     {modified && <meta property="article:modified_time" content={modified.toISOString()} />}
     <meta name="twitter:card" content="summary_large_image" />
@@ -56,7 +56,6 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <a class="skip" href="#main">본문으로 건너뛰기</a>
     <header class="site-top">
       <a class="site-name" href="/">{SITE.title}</a>
-      <span class="site-tag">{SITE.tagline}</span>
       <nav aria-label="주 메뉴">
         <a href="/" aria-current={current === 'posts' ? 'page' : undefined}>글</a>
         <a href="/rss.xml">RSS</a>
@@ -67,7 +66,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     </header>
     <main id="main"><slot /></main>
     <footer class="site-foot">
-      <p>{SITE.title}, {SITE.footnote}</p>
+      <p>{SITE.title}</p>
       <div class="site-links">
         {SITE.links.github && <a href={SITE.links.github}>GitHub</a>}
         {SITE.links.linkedin && <a href={SITE.links.linkedin}>LinkedIn</a>}

@@ -43,8 +43,7 @@ a { color: inherit; text-decoration: none; }
 /* header & footer */
 .site-top { max-width: var(--wrap); margin: 0 auto; display: flex; align-items: baseline; gap: 20px; padding: 28px 40px; border-bottom: 1px solid var(--line); }
 .site-name { font-weight: 700; font-size: 17px; }
-.site-tag { flex: 1; font-size: 14px; color: var(--slate); }
-.site-top nav { display: flex; align-items: center; gap: 22px; }
+.site-top nav { margin-left: auto; display: flex; align-items: center; gap: 22px; }
 .site-top nav a { font-size: 14px; color: var(--slate); }
 .site-top nav a:hover, .site-foot a:hover { color: var(--ink); }
 .site-top nav a[aria-current="page"] { color: var(--ink); font-weight: 600; }
@@ -176,7 +175,6 @@ a { color: inherit; text-decoration: none; }
 }
 @media (max-width: 760px) {
   .site-top { flex-wrap: wrap; padding: 18px 20px; row-gap: 4px; }
-  .site-tag { order: 3; flex-basis: 100%; font-size: 13px; }
   .site-top nav { gap: 16px; margin-left: auto; }
   .lead { padding: 40px 20px 40px; }
   .lead h2 { font-size: 28px; }

@@ -1,9 +1,8 @@
 export const SITE = {
   title: 'youngdong.dev',
   url: 'https://youngdong.dev',
-  description: 'AI 에이전트를 만드는 엔지니어의 블로그. 일하면서 겪은 문제와 결정, 읽고 생각한 것을 적어요.',
-  tagline: 'AI 에이전트를 만들며 겪은 문제와 생각을 적어요',
-  footnote: 'AI 에이전트를 만드는 엔지니어의 블로그',
+  // 화면에는 보이지 않고 검색 결과·공유 미리보기에만 쓰인다
+  description: 'LLM, AI 에이전트, 지식 관리에 대해 해 보고 알게 된 것을 적는 블로그',
   links: {
     github: 'https://github.com/Youngdong2',
     linkedin: '',
