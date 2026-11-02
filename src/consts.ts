@@ -12,10 +12,10 @@ export const SITE = {
   },
   // 댓글: 코드 저장소와 분리한 공개 저장소의 Discussions에 저장한다. 값은 https://giscus.app 에서 확인
   giscus: {
-    repo: '',        // 예: 'Youngdong2/blog-comments'
-    repoId: '',
+    repo: 'Youngdong2/blog-comments',
+    repoId: 'R_kgDOVfl8vA',
     category: 'Comments',
-    categoryId: '',
+    categoryId: 'DIC_kwDOVfl8vM4DKLuR',
   },
 };
 
